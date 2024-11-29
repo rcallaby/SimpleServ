@@ -1,22 +1,29 @@
 #include "request_handler.h"
-#include <unistd.h>
 #include <iostream>
+#include <unistd.h>
+#include <cstring>
 
-RequestHandler::RequestHandler(int client_sock) : client_sock(client_sock) {}
+RequestHandler::RequestHandler(int client_sock) : client_socket(client_sock) {}
 
-RequestHandler::~RequestHandler() {}
-
-void RequestHandler::sendResponse(const std::string &response) {
-    send(client_sock, response.c_str(), response.size(), 0);
+RequestHandler::~RequestHandler() {
+    if (client_socket > 0) {
+        close(client_socket);
+    }
 }
 
 void RequestHandler::handleRequest() {
-    char buffer[1024];
-    recv(client_sock, buffer, sizeof(buffer), 0);
-    std::string request(buffer);
+    handleGetRequest(); // Currently handles only GET requests
+}
 
-    if (request.find("GET") == 0) {
-        handleGetRequest();
-    }
-    close(client_sock);
+void RequestHandler::handleGetRequest() {
+    sendResponse("Default GET Response");
+}
+
+void RequestHandler::sendResponse(const std::string &response) {
+    const std::string http_response = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Length: " + std::to_string(response.size()) + "\r\n"
+        "Content-Type: text/plain\r\n\r\n" + 
+        response;
+    send(client_socket, http_response.c_str(), http_response.size(), 0);
 }
